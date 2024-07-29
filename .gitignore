@@ -1,3 +1,10 @@
+cmake-build-*
+build*
+testcases/
+
+.idea
+.vscode
+
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
