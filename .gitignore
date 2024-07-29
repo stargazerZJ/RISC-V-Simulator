@@ -1,6 +1,7 @@
 cmake-build-*
 build*
 testcases/
+test/
 
 .idea
 .vscode
