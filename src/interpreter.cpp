@@ -99,8 +99,13 @@ private:
 };
 
 uint8_t Interpreter::run(unsigned int max_instructions) {
-    for (unsigned instruction_count = 0; instruction_count < max_instructions; instruction_count ++) {
+    for (unsigned instruction_count = 0; instruction_count < max_instructions; instruction_count++) {
         Bit<32> instruction = memory_->get_word(program_counter_);
+
+        // if (program_counter_ == 0x1000) {
+        //     std::cerr << std::setw(8) << std::setfill(' ') << std::hex << to_unsigned(get_register(15))
+        //     << std::endl;
+        // }
 
         // std::cerr << std::setw(8) << std::setfill(' ') << std::hex << program_counter_
         // << ": " << std::setw(8) << std::setfill(' ') << to_unsigned(instruction)
@@ -112,6 +117,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
 
         if (instruction == 0x0ff00513) {
             // special instruction to return the result and halt the simulator
+            // std::cerr << "No. of instructions: " << std::dec << instruction_count << std::endl;
             return to_unsigned(register_[10].range<7, 0>());
         }
 
@@ -246,9 +252,9 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
         case 0b0010011: {
             // I-type: ALU instructions
             auto decoded = instructions::decode_I(instruction);
-                // auto a = to_unsigned(decoded.imm);
-                // auto b = get_register_unsigned(decoded.rs1);
-                // auto c = b << a;
+            // auto a = to_unsigned(decoded.imm);
+            // auto b = get_register_unsigned(decoded.rs1);
+            // auto c = b << a;
 
             switch (to_unsigned(decoded.funct3)) {
             case 0b000: // ADDI
@@ -273,7 +279,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
                 get_register(decoded.rd) = get_register_unsigned(decoded.rs1) << (to_unsigned(decoded.imm) & 0b11111);
                 break;
             case 0b101: // SRLI/SRAI
-                if (decoded.imm >> 5 == 0b000000) {
+                if (to_unsigned(decoded.imm) >> 5 == 0b000000) {
                     get_register(decoded.rd) = to_unsigned(get_register(decoded.rs1)) >> to_unsigned(
                         decoded.imm & 0b11111);
                 } else {
@@ -308,7 +314,8 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
                 }
                 break;
             case 0b001: // SLL
-                get_register(decoded.rd) = get_register_unsigned(decoded.rs1) << to_unsigned(get_register(decoded.rs2)) &
+                get_register(decoded.rd) = get_register_unsigned(decoded.rs1) << to_unsigned(get_register(decoded.rs2))
+                    &
                     0b11111;
                 break;
             case 0b010: // SLT
