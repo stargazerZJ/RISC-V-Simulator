@@ -200,7 +200,6 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             // I-type: Load instructions
             auto decoded = instructions::decode_I(instruction);
             unsigned int addr = to_unsigned(get_register(decoded.rs1) + to_signed(decoded.imm));
-            auto a = memory_->get_word(addr);
 
             switch (to_unsigned(decoded.funct3)) {
             case 0b000: // LB
@@ -252,9 +251,6 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
         case 0b0010011: {
             // I-type: ALU instructions
             auto decoded = instructions::decode_I(instruction);
-            // auto a = to_unsigned(decoded.imm);
-            // auto b = get_register_unsigned(decoded.rs1);
-            // auto c = b << a;
 
             switch (to_unsigned(decoded.funct3)) {
             case 0b000: // ADDI

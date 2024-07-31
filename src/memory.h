@@ -30,7 +30,7 @@ public:
     void load_data(std::istream& is);
 
 private:
-    std::array<uint8_t, memory_size> memory;
+    std::array<uint8_t, memory_size> memory = {};
 };
 
 inline uint8_t& Memory::get_byte(uint32_t addr) {
