@@ -12,8 +12,8 @@ private:
 
 	friend class Visitor;
 
-	max_size_t _M_old : _Len;
-	max_size_t _M_new : _Len;
+	max_size_t _M_old : _Len = 0;
+	max_size_t _M_new : _Len = 0;
 
 	[[no_unique_address]]
 	debug::DebugValue<bool, false> _M_assigned;

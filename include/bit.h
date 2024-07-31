@@ -13,7 +13,7 @@ private:
 	static_assert(0 < _Nm && _Nm <= kMaxLength,
 				  "Bit: _Nm out of range. Should be in [1, kMaxLength]");
 
-	max_size_t _M_data : _Nm; // Real storage
+	max_size_t _M_data : _Nm = 0; // Real storage
 
 	template<std::size_t _Hi, std::size_t _Lo>
 	static constexpr void _M_range_check();

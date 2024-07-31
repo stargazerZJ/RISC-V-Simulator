@@ -51,7 +51,7 @@ private:
 
 	using _Manage_t = std::unique_ptr<details::FuncBase>;
 
-	_Manage_t _M_func;
+	_Manage_t _M_func = 0;
 
 	mutable max_size_t _M_cache : _Len;
 	mutable bool _M_holds;
