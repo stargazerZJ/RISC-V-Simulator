@@ -84,6 +84,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         static bool is_first_run = true;
         if (is_first_run) {
             flush(0x0, 0x0, false, false);
+            is_first_run = false;
             return;
         }
 
