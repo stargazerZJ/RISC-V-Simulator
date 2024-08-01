@@ -41,6 +41,7 @@ struct Fetcher final : dark::Module<Fetcher_Input, Fetcher_Output> {
         if (is_first_run) {
             first_run();
             is_first_run = false;
+            return ;
         }
         unsigned pc;
         if (pc_from_ROB_enabled) {
