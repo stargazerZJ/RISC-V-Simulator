@@ -90,9 +90,11 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
                 entry.dest           = operation_input.dest;
                 entry.pc_fallthrough = operation_input.pc_fallthrough;
                 entry.pc_target      = operation_input.pc_target;
-                break; // Exit loop once we've added the operation
+                return; // Exit loop once we've added the operation
             }
         }
+        dark::debug::assert(false, "RS_BCU: Failed to find an empty slot");
+        dark::debug::unreachable();
     }
 
     void update_cdb(const CDB_Input& cdb_input) {
