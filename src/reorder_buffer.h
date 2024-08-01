@@ -4,13 +4,15 @@
 
 #pragma once
 
+#include <functional>
+
 #include "common.h"
 #include "tools.h"
 
 namespace rob {
 struct ROB_Entry {
     Bit<1>  busy;
-    Bit<2>  op;          // 00 for jalr, 01 for branch, 10 for others, 11 unused
+    Bit<2>  op;          // 00 for jalr, 01 for branch, 10 for others, 11 for special halt instruction
     Bit<1>  value_ready; // 1 for value acquired, 0 otherwise
     Bit<32> value;       // for jalr, the jump address; for branch and others, the value to write to the register
     Bit<32> alt_value;   // for jalr, pc + 4; for branch, pc of the branch; for others, unused
@@ -73,7 +75,7 @@ struct ROB_Output {
     Output_To_Fetcher      to_fetcher;
     Output_To_Decoder      to_decoder;
     Register<32>           vacancy;      // could have been `bool is_full`, but that requires combinational logic
-    Register<ROB_SIZE_LOG> tail_output;         // could have been `new_tail_id`, but that requires combinational logic
+    Register<ROB_SIZE_LOG> tail_output;  // could have been `new_tail_id`, but that requires combinational logic
     Register<1>            flush_output; // to all
 };
 
@@ -234,7 +236,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
                 flush_output <= 0;
             }
-        } else {
+        } else if (entry.op == 0b10) {
             // other operations
             to_reg_file.enabled <= 1;
             to_reg_file.reg_id <= entry.dest;
@@ -250,6 +252,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             to_fetcher.branch_record_enabled <= 0;
 
             flush_output <= 0;
+        } else {
+            // Special halt instruction
+            halt_callback();
         }
 
         // Update the head pointer and mark the entry as not busy
@@ -291,5 +296,6 @@ private:
     std::array<ROB_Entry, ROB_SIZE> rob; // the pos 0 of rob is unused!
     Bit<ROB_SIZE_LOG>               head;
     Bit<ROB_SIZE_LOG>               tail;
+    std::function<void()>           halt_callback;
 };
 } // namespace rob

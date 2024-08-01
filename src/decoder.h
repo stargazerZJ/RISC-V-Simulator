@@ -49,7 +49,7 @@ struct Output_To_Fetcher {
 
 struct Output_To_ROB {
     Register<1>  enabled;
-    Register<2>  op;          // 00 for jalr, 01 for branch, 10 for others, 11 unused
+    Register<2>  op;          // 00 for jalr, 01 for branch, 10 for others, 11 for special halt instruction
     Register<1>  value_ready; // 1 for value acquired, 0 otherwise
     Register<32> value;       // for jalr, the jump address; for branch and others, the value to write to the register
     Register<32> alt_value;   // for jalr, pc + 4; for branch, pc of the branch; for others, unused
@@ -263,11 +263,17 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         }
         switch (opcode) {
         case 0b0110111: { // LUI
-            // TODO: deal with the special halt instruction
+            Bit<2> op;
+            if (instruction == 0x0ff00513) {
+                // Special halt instruction to stop the simulator
+                op = 3; // type 'halt'
+            } else {
+                op = 2; // type 'others'
+            }
 
             // Set output to ROB
             to_rob.enabled <= 1;
-            to_rob.op <= 2;          // type 'others'
+            to_rob.op <= op;
             to_rob.value_ready <= 1; // value ready
             to_rob.value <= to_unsigned(imm_u) << 12;
             to_rob.alt_value <= 0;

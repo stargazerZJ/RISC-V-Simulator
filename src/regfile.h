@@ -69,6 +69,11 @@ struct RegFile final : dark::Module<RegFile_Input, RegFile_Output> {
         }
     }
 
+    /// for outputing the result after halting the simulator.
+    auto get_data(unsigned reg_id) {
+        return data_[reg_id];
+    }
+
 private:
     std::array<Bit<ROB_SIZE_LOG>, 32> rob_id_ = {}; // Bit is used to enable combinational logic.
     std::array<Bit<32>, 32>           data_   = {};
