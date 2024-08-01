@@ -82,9 +82,10 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
                 entry.Qj   = operation_input.Qj;
                 entry.Qk   = operation_input.Qk;
                 entry.dest = operation_input.dest;
-                break; // Exit loop once we've added the operation
+                return; // Exit loop once we've added the operation
             }
         }
+        dark::debug::assert(false, "RS_ALU: Failed to find an empty slot");
         dark::debug::unreachable();
     }
 
