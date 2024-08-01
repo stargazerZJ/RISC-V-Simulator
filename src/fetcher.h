@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "tools.h"
 
+namespace fetcher {
 struct Fetcher_Input {
     Wire<32> last_PC_plus_4;
 
@@ -62,3 +63,4 @@ struct Fetcher final : dark::Module<Fetcher_Input, Fetcher_Output> {
 private:
     Memory *memory;
 };
+}
