@@ -563,7 +563,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
                 to_rs_alu.op <= Bit{Bit<1>{0}, func3};
             }
             to_rs_alu.Vj <= rs1_result.V;
-            to_rs_alu.Vk <= (func3 == 0b001 || func3 == 0b101) ? instruction.range<24, 20>() : to_signed(imm_i);
+            to_rs_alu.Vk <= ((func3 == 0b001 || func3 == 0b101) ? to_unsigned(instruction.range<24, 20>()) : to_signed(imm_i));
             to_rs_alu.Qj <= rs1_result.Q;
             to_rs_alu.Qk <= 0;
             to_rs_alu.dest <= rob_id;
