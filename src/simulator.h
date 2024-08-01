@@ -86,6 +86,7 @@ public:
         dark::connect(rs_alu_.cdb_input_alu, alu_.cdb_output);
         dark::connect(rs_alu_.cdb_input_mem, mem_.cdb_output);
         rs_alu_.flush_input = reorder_buffer_.flush_output;
+        // rs_alu_.flush_input = decoder_.to_rs_alu.enabled; // Test if assigning a wire twice leads to CE
 
         // To ALU
         dark::connect(static_cast<RS_ALU::ALU_Input&>(alu_), rs_alu_.to_alu);
