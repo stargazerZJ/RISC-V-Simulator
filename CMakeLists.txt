@@ -10,12 +10,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native")
 include_directories(include)
 
 #add_executable(alu src/alu.cpp)
-#
+
 ## For debug build
 #add_executable(modules src/modules.cpp)
 #target_compile_definitions(modules PRIVATE _DEBUG)
-#
-#add_executable(interpreter src/interpreter.cpp)
-#target_compile_definitions(interpreter PRIVATE _DEBUG)
 
-add_executable(code src/interpreter.cpp)
+add_executable(simulator src/main.cpp)
+target_compile_definitions(simulator PRIVATE _DEBUG)
+
+add_executable(code src/main.cpp)
+
+#add_executable(test src/test.cpp)
+#target_compile_definitions(test PRIVATE _DEBUG)
