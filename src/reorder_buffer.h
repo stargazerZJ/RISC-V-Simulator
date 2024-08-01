@@ -196,7 +196,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         auto& entry = rob[to_unsigned(head)];
 
         // Handle different operation types
-        if (entry.op == 0b00) {
+        switch (to_unsigned(entry.op)) {
+        case 0b00: {
             // jalr operation
             to_fetcher.pc_enabled <= 1;
             to_fetcher.pc <= (entry.value & ~1);
@@ -213,7 +214,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             to_reg_file.rob_id <= head;
 
             flush_output <= 0;
-        } else if (entry.op == 0b01) {
+            break;
+        }
+        case 0b01: {
             // branch operation
             if (entry.branch_taken != entry.pred_branch_taken) {
                 // Mis-predicted branch
@@ -236,7 +239,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
                 flush_output <= 0;
             }
-        } else if (entry.op == 0b10) {
+            break;
+        }
+        case 0b10: {
             // other operations
             to_reg_file.enabled <= 1;
             to_reg_file.reg_id <= entry.dest;
@@ -252,9 +257,13 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             to_fetcher.branch_record_enabled <= 0;
 
             flush_output <= 0;
-        } else {
+            break;
+        }
+        default: {
             // Special halt instruction
             halt_callback();
+            break;
+        }
         }
 
         // Update the head pointer and mark the entry as not busy
@@ -292,7 +301,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         return (tail == ROB_SIZE - 1) ? 1 : tail + 1;
     }
 
-    std::function<void()>           halt_callback;
+    std::function<void()> halt_callback;
+
 private:
     std::array<ROB_Entry, ROB_SIZE> rob; // the pos 0 of rob is unused!
     Bit<ROB_SIZE_LOG>               head;
