@@ -149,7 +149,9 @@ public:
 
         reorder_buffer_.halt_callback = halt_callback;
 
-        cpu_.run(100, true);
+        cpu_.run(1000, true);
+
+        dark::debug::assert(false, "CPU: maxmimum cycle count reached");
     }
 
 private:
