@@ -26,7 +26,6 @@ struct Operation_Input {
     Wire<32> value;     // for jalr, the jump address; for branch and others, the value to write to the register
     Wire<32> alt_value; // for jalr, pc + 4; for branch, pc of the branch; for others, unused
     Wire<5>  dest;      // the register to store the value
-    Wire<1>  branch_taken;
     Wire<1>  predicted_branch_taken;
 };
 
@@ -63,12 +62,19 @@ struct Output_To_Fetcher {
     Register<1>  branch_record_enabled;
 };
 
+struct Output_To_Decoder {
+    std::array<Register<32>, ROB_SIZE> value;
+    std::array<Register<1>, ROB_SIZE>  ready;
+};
+
 struct ROB_Output {
-    Output_To_RegFile to_reg_file;
-    Commit_Output     commit_output; // to RS and Decoder
-    Output_To_Fetcher to_fetcher;
-    Register<32>      vacancy;      // could have been `bool is_full`, but that requires combinational logic
-    Register<1>       flush_output; // to all
+    Output_To_RegFile      to_reg_file;
+    Commit_Output          commit_output; // to RS and Decoder
+    Output_To_Fetcher      to_fetcher;
+    Output_To_Decoder      to_decoder;   // TODO: fill this output
+    Register<32>           vacancy;      // could have been `bool is_full`, but that requires combinational logic
+    Register<ROB_SIZE_LOG> tail_output;         // could have been `new_tail_id`, but that requires combinational logic TODO: fill this output
+    Register<1>            flush_output; // to all
 };
 
 struct ROB final : dark::Module<ROB_Input, ROB_Output> {
@@ -108,7 +114,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
             flush_output <= 0;
 
-            write_vacancy();
+            write_to_decoder();
         }
     }
 
@@ -141,11 +147,11 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         head = 1;
         tail = 0;
 
-        vacancy <= ROB_SIZE - 1; // the pos 0 of rob is unused;
+        write_to_decoder();
     }
 
     void add_operation(const Operation_Input& op_input) {
-        auto& entry             = rob[next_tail(to_unsigned(tail))];
+        auto& entry = rob[next_tail(to_unsigned(tail))];
         dark::debug::assert(entry.busy == 0, "ROB: got instruction when buffer is full!");
         entry.busy              = 1;
         entry.op                = op_input.op;
@@ -153,7 +159,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         entry.value             = op_input.value;
         entry.alt_value         = op_input.alt_value;
         entry.dest              = op_input.dest;
-        entry.branch_taken      = op_input.branch_taken;
+        entry.branch_taken      = 0;
         entry.pred_branch_taken = op_input.predicted_branch_taken;
         tail                    = next_tail(to_unsigned(tail));
     }
@@ -163,7 +169,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         for (auto& entry : rob) {
             if (entry.busy == 1 && entry.value_ready == 0) {
                 if (to_unsigned(cdb_input.rob_id) == &entry - &rob[0]) {
-                    entry.value = cdb_input.value;
+                    entry.value       = cdb_input.value;
                     entry.value_ready = 1;
                 }
             }
@@ -173,10 +179,11 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
     void update_bcu(const Input_From_BCU& bcu_input) {
         if (bcu_input.rob_id == 0) return;
         auto& entry = rob[to_unsigned(bcu_input.rob_id)];
-        if (entry.busy == 1 && entry.value_ready == 0 && entry.op == 0b01) { // branch operation
+        if (entry.busy == 1 && entry.value_ready == 0 && entry.op == 0b01) {
+            // branch operation
             if (to_unsigned(bcu_input.rob_id) == &entry - &rob[0]) {
-                entry.value = bcu_input.value;
-                entry.value_ready = 1;
+                entry.value        = bcu_input.value;
+                entry.value_ready  = 1;
                 entry.branch_taken = bcu_input.taken;
             }
         }
@@ -187,9 +194,10 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         auto& entry = rob[to_unsigned(head)];
 
         // Handle different operation types
-        if (entry.op == 0b00) { // jalr operation
+        if (entry.op == 0b00) {
+            // jalr operation
             to_fetcher.pc_enabled <= 1;
-            to_fetcher.pc <= entry.value;
+            to_fetcher.pc <= (entry.value & ~1);
             to_fetcher.branch_pc <= 0;
             to_fetcher.branch_taken <= 0;
             to_fetcher.branch_record_enabled <= 0;
@@ -203,11 +211,14 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             to_reg_file.rob_id <= head;
 
             flush_output <= 0;
-        } else if (entry.op == 0b01) { // branch operation
-            if (entry.branch_taken != entry.pred_branch_taken) { // Mis-predicted branch
+        } else if (entry.op == 0b01) {
+            // branch operation
+            if (entry.branch_taken != entry.pred_branch_taken) {
+                // Mis-predicted branch
                 flush(entry.value, entry.alt_value, to_unsigned(entry.branch_taken), true);
-                return ;
-            } else { // Correctly predicted branch
+                return;
+            } else {
+                // Correctly predicted branch
                 to_fetcher.pc_enabled <= 0;
                 to_fetcher.pc <= 0;
                 to_fetcher.branch_pc <= entry.value;
@@ -223,7 +234,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
                 flush_output <= 0;
             }
-        } else { // other operations
+        } else {
+            // other operations
             to_reg_file.enabled <= 1;
             to_reg_file.reg_id <= entry.dest;
             to_reg_file.data <= entry.value;
@@ -241,20 +253,20 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
 
         // Update the head pointer and mark the entry as not busy
-        entry.busy = 0;
-        entry.op = 0;
-        entry.value_ready = 0;
-        entry.value = 0;
-        entry.alt_value = 0;
-        entry.dest = 0;
-        entry.branch_taken = 0;
+        entry.busy              = 0;
+        entry.op                = 0;
+        entry.value_ready       = 0;
+        entry.value             = 0;
+        entry.alt_value         = 0;
+        entry.dest              = 0;
+        entry.branch_taken      = 0;
         entry.pred_branch_taken = 0;
-        head = next_tail(to_unsigned(head));
+        head                    = next_tail(to_unsigned(head));
 
-        write_vacancy();
+        write_to_decoder();
     }
 
-    void write_vacancy() {
+    void write_to_decoder() {
         unsigned vacancy_count = 0;
         for (const auto& entry : rob) {
             if (!to_unsigned(entry.busy)) {
@@ -262,6 +274,13 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             }
         }
         vacancy <= vacancy_count - 1; // account for the unused entry at position 0
+
+        tail_output <= tail;
+
+        for (unsigned i = 0; i < ROB_SIZE; i++) {
+            to_decoder.ready[i] <= rob[i].busy;
+            to_decoder.value[i] <= rob[i].value;
+        }
     }
 
     static unsigned int next_tail(unsigned int tail) {

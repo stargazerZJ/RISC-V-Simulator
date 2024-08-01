@@ -17,6 +17,7 @@ struct ROB_WB_Input {
 
 struct Decoder_WB_Input {
     Wire<1>            enabled;
+    Wire<5>            reg_id;
     Wire<ROB_SIZE_LOG> rob_id;
 };
 
@@ -47,7 +48,7 @@ struct RegFile final : dark::Module<RegFile_Input, RegFile_Output> {
             }
         }
         if (decoder_wb_input.enabled) {
-            unsigned reg_id = to_unsigned(decoder_wb_input.rob_id);
+            unsigned reg_id = to_unsigned(decoder_wb_input.reg_id);
             rob_id_[reg_id] = decoder_wb_input.rob_id;
         }
         rob_id_[0] = 0; // x0 is always 0.

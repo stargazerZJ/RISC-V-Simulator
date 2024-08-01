@@ -243,6 +243,7 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
             }
 
             // TODO: This is WRONG! Add age in entry to ensure that previous loads are issued!
+            // Or, make sure there's no unissued load instruction whose Ql is resolved
             // Or, change last_store_id to last_load_or_store_id to make the RS fully ordered
             // Issue store instructions
             for (auto& entry : rs_store) {
@@ -440,6 +441,7 @@ private:
             value = load_data(input);
         } else {
             // Store
+            value = 0;
             store_data(input);
         }
     }
