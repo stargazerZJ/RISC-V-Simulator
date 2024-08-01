@@ -71,9 +71,9 @@ struct ROB_Output {
     Output_To_RegFile      to_reg_file;
     Commit_Output          commit_output; // to RS and Decoder
     Output_To_Fetcher      to_fetcher;
-    Output_To_Decoder      to_decoder;   // TODO: fill this output
+    Output_To_Decoder      to_decoder;
     Register<32>           vacancy;      // could have been `bool is_full`, but that requires combinational logic
-    Register<ROB_SIZE_LOG> tail_output;         // could have been `new_tail_id`, but that requires combinational logic TODO: fill this output
+    Register<ROB_SIZE_LOG> tail_output;         // could have been `new_tail_id`, but that requires combinational logic
     Register<1>            flush_output; // to all
 };
 
