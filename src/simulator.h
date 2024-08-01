@@ -86,10 +86,14 @@ public:
         dark::connect(rs_alu_.cdb_input_alu, alu_.cdb_output);
         dark::connect(rs_alu_.cdb_input_mem, mem_.cdb_output);
         rs_alu_.flush_input = reorder_buffer_.flush_output;
-        // rs_alu_.flush_input = decoder_.to_rs_alu.enabled; // Test if assigning a wire twice leads to CE
 
         // To ALU
-        dark::connect(static_cast<RS_ALU::ALU_Input&>(alu_), rs_alu_.to_alu);
+        alu_.dest = [&] {
+            return reorder_buffer_.flush_output == 1 ? 0 : to_unsigned(rs_alu_.to_alu.dest);
+        };
+        alu_.op  = rs_alu_.to_alu.op;
+        alu_.rs1 = rs_alu_.to_alu.Vj;
+        alu_.rs2 = rs_alu_.to_alu.Vk;
 
         // To RS_BCU
         dark::connect(rs_bcu_.operation_input, decoder_.to_rs_bcu);
@@ -98,7 +102,15 @@ public:
         rs_bcu_.flush_input = reorder_buffer_.flush_output;
 
         // To BCU
-        dark::connect(static_cast<RS_BCU::BCU_Input&>(bcu_), rs_bcu_.to_bcu);
+        bcu_.dest = [&] {
+            return reorder_buffer_.flush_output == 1 ? 0 : to_unsigned(rs_bcu_.to_bcu.dest);
+        };
+        bcu_.op             = rs_bcu_.to_bcu.op;
+        bcu_.rs1            = rs_bcu_.to_bcu.Vj;
+        bcu_.rs2            = rs_bcu_.to_bcu.Vk;
+        bcu_.pc_fallthrough = rs_bcu_.to_bcu.pc_fallthrough;
+        bcu_.pc_target      = rs_bcu_.to_bcu.pc_target;
+
 
         // To RS_Mem
         dark::connect(rs_mem_.load_input, decoder_.to_rs_mem_load);

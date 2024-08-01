@@ -173,7 +173,7 @@ struct ALU_Input {
     Wire<4>            op;
     Wire<32>           rs1;
     Wire<32>           rs2;
-    Wire<ROB_SIZE_LOG> dest; // TODO: combinational logic: if flushed, dest = 0
+    Wire<ROB_SIZE_LOG> dest;
 };
 
 // /// in common.h
