@@ -168,7 +168,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             disable_all_outputs();
             return;
         } else if (state == 3) {
-            if (commit_info.rob_id == last_branch_id) {
+            if (last_branch_id == 0) {
                 state = 1;
             }
             disable_all_outputs();
@@ -176,9 +176,13 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         }
 
         Bit<32> instruction = to_unsigned((state == 1) ? from_fetcher.instruction : last_instruction);
+        Bit<32> program_counter = to_unsigned((state == 1) ? from_fetcher.program_counter : last_program_counter);
+        Bit<1>  predicted_branch_taken = to_unsigned((state == 1) ? from_fetcher.predicted_branch_taken : last_predicted_branch_taken);
 
-        issue_instruction(instruction);
+        issue_instruction(instruction, program_counter, predicted_branch_taken);
         last_instruction = instruction;
+        last_program_counter = program_counter;
+        last_predicted_branch_taken = predicted_branch_taken;
     }
 
     struct Query_Register_Result {
@@ -219,11 +223,14 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
     void flush() {
         disable_all_outputs();
-        state          = 0;
+        state          = 1;
         last_branch_id = 0;
+        last_instruction = 0;
+        last_program_counter = 0;
+        last_predicted_branch_taken = 0;
     }
 
-    void issue_instruction(Bit<32> instruction) {
+    void issue_instruction(Bit<32> instruction, Bit<32> program_counter, Bit<1> predicted_branch_taken) {
         // set flags that records whether an output has been written
         // call to_something.write_disable(!flag) in the end
         // Ensure all outputs are correctly marked disabled if not written
@@ -258,7 +265,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         auto rs2_result = query_register(to_unsigned(rs2));
 
         if (rob_full == 1) {
-            issue_failure();
+            issue_failure(program_counter);
             return;
         }
         switch (opcode) {
@@ -292,7 +299,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         case 0b0010111: { // AUIPC
             if (rs_alu_full == 1) {
                 // ALU reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
@@ -315,7 +322,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             // Set output to RS_ALU
             to_rs_alu.enabled <= 1;
             to_rs_alu.op <= 0x000; // Since ALU will perform addition
-            to_rs_alu.Vj <= from_fetcher.program_counter;
+            to_rs_alu.Vj <= program_counter;
             to_rs_alu.Vk <= to_unsigned(imm_u) << 12;
             to_rs_alu.Qj <= 0;
             to_rs_alu.Qk <= 0;
@@ -326,14 +333,14 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         }
         case 0b1101111: { // JAL
             // Calculate the jump address using sign-extended immediate
-            Bit<32> jump_address = from_fetcher.program_counter + to_signed(imm_j);
+            Bit<32> jump_address = program_counter + to_signed(imm_j);
 
             // Set output to ROB
             to_rob.enabled <= 1;
             to_rob.op <= 2;          // type 'others'
             to_rob.value_ready <= 1; // value ready
             // The jump address isn't written to the ROB, as it's not needed
-            to_rob.value <= from_fetcher.program_counter + 4;
+            to_rob.value <= program_counter + 4;
             to_rob.alt_value <= 0;
             to_rob.dest <= rd;
             to_rob.predicted_branch_taken <= 0; // Not a branch prediction
@@ -366,7 +373,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
                     to_rob.enabled <= 1;
                     to_rob.op <= 2;          // type 'others'
                     to_rob.value_ready <= 1; // value ready
-                    to_rob.value <= from_fetcher.program_counter + 4;
+                    to_rob.value <= program_counter + 4;
                     to_rob.alt_value <= 0;
                     to_rob.dest <= 0; // unused
                     to_rob.predicted_branch_taken <= 0;
@@ -385,7 +392,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             // Regular JALR
             if (rs_alu_full == 1) {
                 // ALU reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
@@ -394,7 +401,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_rob.op <= 0;          // type 'jalr'
             to_rob.value_ready <= 0; // value not ready until ALU computes it
             to_rob.value <= 0;       // temporary
-            to_rob.alt_value <= from_fetcher.program_counter + 4;
+            to_rob.alt_value <= program_counter + 4;
             to_rob.dest <= rd;
             to_rob.predicted_branch_taken <= 0;
             rob_written = true;
@@ -423,24 +430,24 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         case 0b1100011: { // Branch Instructions: BEQ, BNE, BLT, BGE, BLTU, BGEU
             if (rs_bcu_full == 1) {
                 // BCU reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
             // Calculate branch target address
-            Bit<32> target_address            = from_fetcher.program_counter + to_signed(imm_b);
-            Bit<32> predicted_program_counter = from_fetcher.predicted_branch_taken
+            Bit<32> target_address            = program_counter + to_signed(imm_b);
+            Bit<32> predicted_program_counter = to_unsigned(predicted_branch_taken)
                                                     ? target_address
-                                                    : from_fetcher.program_counter + 4;
+                                                    : program_counter + 4;
 
             // Set output to ROB (registration of branch instruction)
             to_rob.enabled <= 1;
             to_rob.op <= 1;                                   // type 'branch'
             to_rob.value_ready <= 0;                          // value not ready until branch is resolved
             to_rob.value <= 0;                                // temporary
-            to_rob.alt_value <= from_fetcher.program_counter; // Current pc
+            to_rob.alt_value <= program_counter; // Current pc
             to_rob.dest <= 0;                                 // No register to write to
-            to_rob.predicted_branch_taken <= from_fetcher.predicted_branch_taken;
+            to_rob.predicted_branch_taken <= predicted_branch_taken;
             rob_written = true;
 
             // Prepare to set the fetcher to the predicted next instruction
@@ -456,7 +463,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_rs_bcu.Qj <= rs1_result.Q;
             to_rs_bcu.Qk <= rs2_result.Q;
             to_rs_bcu.dest <= rob_id;
-            to_rs_bcu.pc_fallthrough <= from_fetcher.program_counter + 4;
+            to_rs_bcu.pc_fallthrough <= program_counter + 4;
             to_rs_bcu.pc_target <= target_address;
             rs_bcu_written = true;
 
@@ -468,7 +475,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         case 0b0000011: { // Load Instructions: LB, LH, LW, LBU, LHU
             if (rs_mem_load_full == 1) {
                 // Load reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
@@ -503,7 +510,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         case 0b0100011: { // Store Instructions: SB, SH, SW
             if (rs_mem_store_full == 1) {
                 // Store reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
@@ -535,7 +542,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         case 0b0010011: { // I-type ALU Instructions: ADDI, SLTI, SLTIU, XORI, ORI, ANDI, SLLI, SRLI, SRAI
             if (rs_alu_full == 1) {
                 // ALU reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
@@ -557,13 +564,15 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
             // Set output to RS_ALU
             to_rs_alu.enabled <= 1;
-            if (func3 == 0b001 || func3 == 0b101) { // SLLI, SRLI, SRAI
+            if (func3 == 0b001 || func3 == 0b101) {                      // SLLI, SRLI, SRAI
                 to_rs_alu.op <= Bit{instruction.range<30, 30>(), func3}; // func7 bit 5 and func3 define ALU operation
-            } else { // ADDI, SLTI, SLTIU, XORI, ORI, ANDI
+            } else {                                                     // ADDI, SLTI, SLTIU, XORI, ORI, ANDI
                 to_rs_alu.op <= Bit{Bit<1>{0}, func3};
             }
             to_rs_alu.Vj <= rs1_result.V;
-            to_rs_alu.Vk <= ((func3 == 0b001 || func3 == 0b101) ? to_unsigned(instruction.range<24, 20>()) : to_signed(imm_i));
+            to_rs_alu.Vk <= ((func3 == 0b001 || func3 == 0b101)
+                                 ? to_unsigned(instruction.range<24, 20>())
+                                 : to_signed(imm_i));
             to_rs_alu.Qj <= rs1_result.Q;
             to_rs_alu.Qk <= 0;
             to_rs_alu.dest <= rob_id;
@@ -574,7 +583,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         case 0b0110011: { // R-type ALU Instructions: ADD, SUB, SLL, SLT, SLTU, XOR, SRL, SRA, OR, AND
             if (rs_alu_full == 1) {
                 // ALU reservation station is full
-                issue_failure();
+                issue_failure(program_counter);
                 return;
             }
 
@@ -621,11 +630,11 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         to_reg_file.write_disable(!reg_file_written);
     }
 
-    void issue_failure() {
+    void issue_failure(Bit<32> program_counter) {
         state = 2; // Try to issue previous instruction
 
         to_fetcher.enabled <= 1;
-        to_fetcher.pc <= from_fetcher.program_counter + 4;
+        to_fetcher.pc <= program_counter + 4;
         // so that once the previous instruction is issued, the decoder will receive the next instruction in the next cycle
 
         to_rob.write_disable();
@@ -640,17 +649,19 @@ private:
     // TODO: use enum class for state
     Bit<ROB_SIZE_LOG> last_branch_id; // the rob_id of the last uncommitted branch instruction, used in RS_Mem_Store
     Bit<32>           last_instruction;
+    Bit<32>           last_program_counter;
+    Bit<1>            last_predicted_branch_taken;
 };
 
 inline void Output_To_Fetcher::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         pc <= 0;
     }
 }
 
 inline void Output_To_ROB::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         op <= 3; // 11 unused value to reflect disable
         value_ready <= 0;
@@ -662,7 +673,7 @@ inline void Output_To_ROB::write_disable(bool valid) {
 }
 
 inline void Output_To_RS_ALU::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         op <= 0;
         Vj <= 0;
@@ -674,7 +685,7 @@ inline void Output_To_RS_ALU::write_disable(bool valid) {
 }
 
 inline void Output_To_RS_BCU::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         op <= 0;
         Vj <= 0;
@@ -688,7 +699,7 @@ inline void Output_To_RS_BCU::write_disable(bool valid) {
 }
 
 inline void Output_To_RS_Mem_Load::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         op <= 0;
         Vj <= 0;
@@ -699,7 +710,7 @@ inline void Output_To_RS_Mem_Load::write_disable(bool valid) {
 }
 
 inline void Output_To_RS_Mem_Store::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         op <= 0;
         Vj <= 0;
@@ -713,11 +724,10 @@ inline void Output_To_RS_Mem_Store::write_disable(bool valid) {
 }
 
 inline void Output_To_RegFile::write_disable(bool valid) {
-    if (!valid) {
+    if (valid) {
         enabled <= 0;
         reg_id <= 0;
         rob_id <= 0;
     }
 }
-
 } // namespace decoder
