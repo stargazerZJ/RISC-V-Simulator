@@ -192,7 +192,6 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
     }
 
     void commit() {
-        // TODO: handle the special halt instruction
         auto& entry = rob[to_unsigned(head)];
 
         // Handle different operation types
@@ -292,10 +291,10 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         return (tail == ROB_SIZE - 1) ? 1 : tail + 1;
     }
 
+    std::function<void()>           halt_callback;
 private:
     std::array<ROB_Entry, ROB_SIZE> rob; // the pos 0 of rob is unused!
     Bit<ROB_SIZE_LOG>               head;
     Bit<ROB_SIZE_LOG>               tail;
-    std::function<void()>           halt_callback;
 };
 } // namespace rob

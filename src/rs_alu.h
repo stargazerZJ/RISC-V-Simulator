@@ -143,7 +143,7 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
                 // Mark the entry as no longer busy
                 entry.busy = 0;
 
-                break;  // Only one operation can be issued in a cycle
+                break; // Only one operation can be issued in a cycle
             }
         }
         if (!found_operation) {
@@ -182,51 +182,53 @@ struct ALU_Input {
 //     Register<32>           value;
 // };
 
-using ALU_Output = CDB_Output;
+struct ALU_Output {
+    CDB_Output cdb_output;
+};
 
 struct ALU final : dark::Module<ALU_Input, ALU_Output> {
     void work() {
         if (dest == 0) {
-            rob_id <= 0;
-            value <= 0;
-            return ;
+            cdb_output.rob_id <= 0;
+            cdb_output.value <= 0;
+            return;
         }
         unsigned opcode = to_unsigned(op); // the bit 30 of func7, and func3
         switch (opcode) {
         case 0b000: // ADD, ADDI, auipc, jalr
-            value <= (rs1 + rs2);
+            cdb_output.value <= (rs1 + rs2);
             break;
         case 0b1000: // SUB (funct7 bit 30 is set for subtraction)
-            value <= (rs1 - rs2);
+            cdb_output.value <= (rs1 - rs2);
             break;
         case 0b001: // SLL, SLLI
-            value <= (rs1 << (rs2 & 0x1F));
+            cdb_output.value <= (rs1 << (rs2 & 0x1F));
             break;
         case 0b010: // SLT, SLTI
-            value <= (to_signed(rs1) < to_signed(rs2));
+            cdb_output.value <= (to_signed(rs1) < to_signed(rs2));
             break;
         case 0b011: // SLTU, SLTIU
-            value <= (rs1 < rs2);
+            cdb_output.value <= (rs1 < rs2);
             break;
         case 0b100: // XOR, XORI
-            value <= (rs1 ^ rs2);
+            cdb_output.value <= (rs1 ^ rs2);
             break;
         case 0b101: // SRL, SRLI
-            value <= (to_unsigned(rs1) >> to_unsigned(rs2 & 0x1F));
+            cdb_output.value <= (to_unsigned(rs1) >> to_unsigned(rs2 & 0x1F));
             break;
         case 0b1101: // SRA, SRAI (func7 bit 30 is set for arithmetic shift right)
-            value <= (to_signed(rs1) >> to_unsigned(rs2 & 0x1F));
+            cdb_output.value <= (to_signed(rs1) >> to_unsigned(rs2 & 0x1F));
             break;
         case 0b110: // OR, ORI
-            value <= (rs1 | rs2);
+            cdb_output.value <= (rs1 | rs2);
             break;
         case 0b111: // AND, ANDI
-            value <= (rs1 & rs2);
+            cdb_output.value <= (rs1 & rs2);
             break;
         default:
             dark::debug::unreachable();
         }
-        rob_id <= dest;
+        cdb_output.rob_id <= dest;
     }
 };
 } // namespace RS_ALU

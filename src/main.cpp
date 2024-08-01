@@ -2,15 +2,9 @@
 // Created by zj on 7/31/2024.
 //
 
-#include "fetcher.h"
-#include "memory.h"
-#include "regfile.h"
-#include "rs_alu.h"
-#include "rs_bcu.h"
-#include "rs_mem.h"
-#include "reorder_buffer.h"
-#include "decoder.h"
+#include "simulator.h"
 
 int main() {
+    Simulator simulator;
     return 0;
 }

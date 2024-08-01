@@ -6,6 +6,7 @@
 #include "synchronize.h"
 #include "wire.h"
 #include "module.h"
+#include "misc.h"
 #include "cpu.h"
 
 namespace dark {

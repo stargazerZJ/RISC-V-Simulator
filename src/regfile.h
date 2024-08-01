@@ -22,8 +22,8 @@ struct Decoder_WB_Input {
 };
 
 struct RegFile_Input {
-    ROB_WB_Input     rob_wb_input;
-    Decoder_WB_Input decoder_wb_input;
+    ROB_WB_Input     from_rob;
+    Decoder_WB_Input from_decoder;
     Wire<1> flush_input;
 };
 
@@ -40,16 +40,16 @@ struct RegFile final : dark::Module<RegFile_Input, RegFile_Output> {
         if (flush_input) {
             return flush();
         }
-        if (rob_wb_input.enabled) {
-            unsigned reg_id = to_unsigned(rob_wb_input.reg_id);
-            data_[reg_id]   = rob_wb_input.data;
-            if (rob_wb_input.rob_id == rob_id_[reg_id]) {
+        if (from_rob.enabled) {
+            unsigned reg_id = to_unsigned(from_rob.reg_id);
+            data_[reg_id]   = from_rob.data;
+            if (from_rob.rob_id == rob_id_[reg_id]) {
                 rob_id_[reg_id] = 0;
             }
         }
-        if (decoder_wb_input.enabled) {
-            unsigned reg_id = to_unsigned(decoder_wb_input.reg_id);
-            rob_id_[reg_id] = decoder_wb_input.rob_id;
+        if (from_decoder.enabled) {
+            unsigned reg_id = to_unsigned(from_decoder.reg_id);
+            rob_id_[reg_id] = from_decoder.rob_id;
         }
         rob_id_[0] = 0; // x0 is always 0.
         data_[0]   = 0;
@@ -71,7 +71,7 @@ struct RegFile final : dark::Module<RegFile_Input, RegFile_Output> {
 
     /// for outputing the result after halting the simulator.
     auto get_data(unsigned reg_id) {
-        return data_[reg_id];
+        return to_unsigned(data_[reg_id]);
     }
 
 private:

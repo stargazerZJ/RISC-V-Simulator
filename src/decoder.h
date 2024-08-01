@@ -20,8 +20,8 @@ struct Input_From_Regfile {
 };
 
 struct Input_From_ROB {
-    std::array<Register<32>, ROB_SIZE> value;
-    std::array<Register<1>, ROB_SIZE>  ready;
+    std::array<Wire<32>, ROB_SIZE> value;
+    std::array<Wire<1>, ROB_SIZE>  ready;
 };
 
 struct Decoder_Input {

@@ -397,8 +397,8 @@ struct Mem_Output {
     // whether the instruction is received. The RS keeps sending the same instruction until it is received
 };
 
-struct MemoryModule final : dark::Module<Mem_Input, Mem_Output> {
-    explicit MemoryModule(Memory* memory) : memory(memory), state(0) {}
+struct MemoryUnit final : dark::Module<Mem_Input, Mem_Output> {
+    explicit MemoryUnit(Memory* memory) : memory(memory), state(0) {}
 
     void work() {
         if (flush_input == 1) {
