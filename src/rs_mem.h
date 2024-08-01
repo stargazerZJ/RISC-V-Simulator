@@ -242,13 +242,11 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
                 }
             }
 
-            // TODO: This is WRONG! Add age in entry to ensure that previous loads are issued!
-            // Or, make sure there's no unissued load instruction whose Ql is resolved
-            // Or, change last_store_id to last_load_or_store_id to make the RS fully ordered
-            // Issue store instructions
-            for (auto& entry : rs_store) {
-                if (try_issue_entry(entry)) {
-                    return;
+            if (can_store()) {
+                for (auto& entry : rs_store) {
+                    if (try_issue_entry(entry)) {
+                        return;
+                    }
                 }
             }
 
@@ -260,6 +258,17 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
             to_mem.offset <= 0;
             to_mem.dest <= 0;
         }
+    }
+
+    bool can_store() {
+        for (auto &entry : rs_load) {
+            if (to_unsigned(entry.busy) && to_unsigned(entry.Ql) == 0) {
+                // There is a load instruction whose store depenency has been resolved
+                // this instruction must be issued before any store instruction
+                return false;
+            }
+        }
+        return true;
     }
 
     bool try_issue_entry(RS_Load_Entry& entry) {
