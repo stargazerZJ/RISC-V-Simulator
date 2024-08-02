@@ -59,6 +59,7 @@ public:
 		while (max_cycles == 0 || cycles < max_cycles)
 			(this->*func)();
 	}
+	unsigned long long get_cycle_count() const { return cycles; }
 };
 
 } // namespace dark

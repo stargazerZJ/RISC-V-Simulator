@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "common.h"
+#include "stats.h"
 #include "tools.h"
 
 namespace rob {
@@ -81,6 +82,8 @@ struct ROB_Output {
 };
 
 struct ROB final : dark::Module<ROB_Input, ROB_Output> {
+    explicit ROB(Stats* stats) : stats_(stats) {}
+
     void work() {
         static bool is_first_run = true;
         if (is_first_run) {
@@ -225,6 +228,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
         case 0b01: {
             // branch operation
+            stats_->record_branch_prediction_result(to_unsigned(entry.pred_branch_taken),
+                                                    to_unsigned(entry.branch_taken));
             if (entry.branch_taken != entry.pred_branch_taken) {
                 // Mis-predicted branch
                 flush(entry.value, entry.alt_value, to_unsigned(entry.branch_taken), true);
@@ -317,5 +322,6 @@ private:
     std::array<ROB_Entry, ROB_SIZE> rob; // the pos 0 of rob is unused!
     Bit<ROB_SIZE_LOG>               head;
     Bit<ROB_SIZE_LOG>               tail;
+    Stats*                          stats_;
 };
 } // namespace rob

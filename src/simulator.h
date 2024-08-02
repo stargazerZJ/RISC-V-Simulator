@@ -13,11 +13,13 @@
 #include "reorder_buffer.h"
 #include "decoder.h"
 #include "tools.h"
+#include "stats.h"
 #include <iostream>
 
 class Simulator {
 public:
-    Simulator() : memory_(std::make_unique<Memory>()), fetcher_(memory_.get()), mem_(memory_.get()) {
+    Simulator() : memory_(std::make_unique<Memory>()), fetcher_(memory_.get()), mem_(memory_.get()),
+                  reorder_buffer_(&stats_) {
         // Add modules to the CPU
         cpu_.add_module(&fetcher_);
         cpu_.add_module(&decoder_);
@@ -144,6 +146,8 @@ public:
 
         std::function halt_callback = [&] {
             unsigned int output = reg_file_.get_data(10) & 0xFF;
+            auto cpu_cycle_count = cpu_.get_cycle_count();
+            stats_.report(cpu_cycle_count);
             std::cout << output << std::endl;
             exit(0);
         };
@@ -168,4 +172,5 @@ private:
     regfile::RegFile            reg_file_;
     rob::ROB                    reorder_buffer_;
     dark::CPU                   cpu_;
+    Stats                       stats_;
 };
