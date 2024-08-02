@@ -257,11 +257,15 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
             to_mem.Vk <= 0;
             to_mem.offset <= 0;
             to_mem.dest <= 0;
+
+            last_issue_status = 0;
+            last_issue_typ    = 0;
+            last_issue_rs_id  = 0;
         }
     }
 
     bool can_store() {
-        for (auto &entry : rs_load) {
+        for (auto& entry : rs_load) {
             if (to_unsigned(entry.busy) && to_unsigned(entry.Ql) == 0) {
                 // There is a load instruction whose store depenency has been resolved
                 // this instruction must be issued before any store instruction
@@ -298,7 +302,7 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
 
         last_issue_status = 1;
         last_issue_typ    = 1;                        // store
-        last_issue_rs_id  = rs_store.data() - &entry; // Calculate index
+        last_issue_rs_id  = &entry - rs_store.data(); // Calculate index
     }
 
     void issue_load_entry(RS_Load_Entry& entry) {
@@ -311,7 +315,7 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
 
         last_issue_status = 1;
         last_issue_typ    = 0;                       // load
-        last_issue_rs_id  = rs_load.data() - &entry; // Calculate index
+        last_issue_rs_id  = &entry - rs_load.data(); // Calculate index
     }
 
     void clear_last_sent() {
