@@ -192,27 +192,38 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             last_branch_id = 0; // No uncommitted branch
         }
 
-        if (state == State::SkipOneCycle) {
+        switch (state) {
+        case State::SkipOneCycle:
             state = State::TryToIssue;
             disable_all_outputs();
             return;
-        } else if (state == State::WaitForJalr) {
+        case State::WaitForJalr:
             wait_for_jalr();
             return;
+
+        case State::TryToIssue: {
+            Bit<32> instruction            = from_fetcher.instruction;
+            Bit<32> program_counter        = from_fetcher.program_counter;
+            Bit<1>  predicted_branch_taken = from_fetcher.predicted_branch_taken;
+
+            issue_instruction(instruction, program_counter, predicted_branch_taken);
+
+            last_instruction            = instruction;
+            last_program_counter        = program_counter;
+            last_predicted_branch_taken = predicted_branch_taken;
+            return;
         }
+        case State::IssuePrevious: {
+            Bit<32> instruction            = last_instruction;
+            Bit<32> program_counter        = last_program_counter;
+            Bit<1>  predicted_branch_taken = last_predicted_branch_taken;
 
-        Bit<32> instruction = to_unsigned((state == State::TryToIssue) ? from_fetcher.instruction : last_instruction);
-        Bit<32> program_counter = to_unsigned((state == State::TryToIssue)
-                                                  ? from_fetcher.program_counter
-                                                  : last_program_counter);
-        Bit<1> predicted_branch_taken = to_unsigned((state == State::TryToIssue)
-                                                        ? from_fetcher.predicted_branch_taken
-                                                        : last_predicted_branch_taken);
-
-        issue_instruction(instruction, program_counter, predicted_branch_taken);
-        last_instruction            = instruction;
-        last_program_counter        = program_counter;
-        last_predicted_branch_taken = predicted_branch_taken;
+            issue_instruction(instruction, program_counter, predicted_branch_taken);
+            return;
+        }
+        default:
+            dark::debug::unreachable();
+        }
     }
 
     struct Query_Register_Result {
