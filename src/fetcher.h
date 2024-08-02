@@ -13,7 +13,8 @@ class BranchPredictor {
 public:
     BranchPredictor() {}
     bool predict(unsigned pc) {
-        return pc % 8 == 0;
+        // return pc % 8 == 0;
+        return false;
     }
     void update(unsigned pc, bool taken) {}
     void reset() {}
