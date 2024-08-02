@@ -13,6 +13,7 @@
 #include "reorder_buffer.h"
 #include "decoder.h"
 #include "tools.h"
+#include <iostream>
 
 class Simulator {
 public:
@@ -149,7 +150,7 @@ public:
 
         reorder_buffer_.halt_callback = halt_callback;
 
-        cpu_.run(100, true);
+        cpu_.run(1e9, true);
 
         dark::debug::assert(false, "CPU: maxmimum cycle count reached");
     }

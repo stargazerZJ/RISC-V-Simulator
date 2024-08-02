@@ -638,8 +638,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             dark::debug::unreachable();
         }
 
-        std::cerr << "IDU: Issued instruction @" << std::hex << to_unsigned(program_counter) << " to ROB entry " <<
-            to_unsigned(rob_id) << std::endl;
+        // std::cerr << "IDU: Issued instruction @" << std::hex << to_unsigned(program_counter) << " to ROB entry " <<
+        //     to_unsigned(rob_id) << std::endl;
 
 
         to_rs_alu.write_disable(!rs_alu_written);

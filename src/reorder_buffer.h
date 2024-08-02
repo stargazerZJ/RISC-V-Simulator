@@ -217,8 +217,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
             flush_output <= 0;
 
-            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
-                << to_unsigned(entry.alt_value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+            // std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
+            //     << to_unsigned(entry.alt_value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
 
             break;
         }
@@ -228,8 +228,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
                 // Mis-predicted branch
                 flush(entry.value, entry.alt_value, to_unsigned(entry.branch_taken), true);
 
-                std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") Branched to "
-                    << to_unsigned(entry.value) << " (FLUSHED)" << std::endl;
+                // std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") Branched to "
+                //     << to_unsigned(entry.value) << " (FLUSHED)" << std::endl;
                 return;
             } else {
                 // Correctly predicted branch
@@ -248,8 +248,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
                 flush_output <= 0;
 
-                std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") Branched to "
-                    << to_unsigned(entry.value) << std::endl;
+                // std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") Branched to "
+                //     << to_unsigned(entry.value) << std::endl;
             }
             break;
         }
@@ -270,8 +270,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
             flush_output <= 0;
 
-            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
-                << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+            // std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
+            //     << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
 
             break;
         }
