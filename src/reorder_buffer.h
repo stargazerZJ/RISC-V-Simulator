@@ -74,9 +74,9 @@ struct ROB_Output {
     Commit_Output          commit_output; // to RS and Decoder
     Output_To_Fetcher      to_fetcher;
     Output_To_Decoder      to_decoder;
-    Register<32>           vacancy;      // could have been `bool is_full`, but that requires combinational logic
-    Register<ROB_SIZE_LOG> next_tail_output;  // could have been `new_tail_id`, but that requires combinational logic
-    Register<1>            flush_output; // to all
+    Register<32>           vacancy;          // could have been `bool is_full`, but that requires combinational logic
+    Register<ROB_SIZE_LOG> next_tail_output; // could have been `new_tail_id`, but that requires combinational logic
+    Register<1>            flush_output;     // to all
 };
 
 struct ROB final : dark::Module<ROB_Input, ROB_Output> {
@@ -89,7 +89,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
 
         if (operation_input.enabled) {
-            add_operation(operation_input);
+            if (flush_output == 0) { // The input in the cycle after flushing is invalid
+                add_operation(operation_input);
+            }
         }
 
         // Update the reservation station with new inputs from the CDB
@@ -214,6 +216,10 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             to_reg_file.rob_id <= head;
 
             flush_output <= 0;
+
+            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
+                << to_unsigned(entry.alt_value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+
             break;
         }
         case 0b01: {
@@ -221,6 +227,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             if (entry.branch_taken != entry.pred_branch_taken) {
                 // Mis-predicted branch
                 flush(entry.value, entry.alt_value, to_unsigned(entry.branch_taken), true);
+
+                std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") Branched to "
+                    << to_unsigned(entry.value) << " (FLUSHED)" << std::endl;
                 return;
             } else {
                 // Correctly predicted branch
@@ -238,6 +247,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
                 to_reg_file.rob_id <= 0;
 
                 flush_output <= 0;
+
+                std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") Branched to "
+                    << to_unsigned(entry.value) << std::endl;
             }
             break;
         }
@@ -257,6 +269,10 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
             to_fetcher.branch_record_enabled <= 0;
 
             flush_output <= 0;
+
+            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
+                << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+
             break;
         }
         default: {
@@ -266,18 +282,9 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
         }
 
-        if (to_unsigned(entry.op) == 0x00) {
-            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
-            << to_unsigned(entry.alt_value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
-        }
-        else {
-            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
-            << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
-        }
-
         // Update the head pointer and mark the entry as not busy
-        entry.busy              = 0;
-        head                    = next_tail(to_unsigned(head));
+        entry.busy = 0;
+        head       = next_tail(to_unsigned(head));
 
         write_to_decoder();
     }
