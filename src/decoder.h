@@ -177,11 +177,13 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
         Bit<32> instruction = to_unsigned((state == 1) ? from_fetcher.instruction : last_instruction);
         Bit<32> program_counter = to_unsigned((state == 1) ? from_fetcher.program_counter : last_program_counter);
-        Bit<1>  predicted_branch_taken = to_unsigned((state == 1) ? from_fetcher.predicted_branch_taken : last_predicted_branch_taken);
+        Bit<1>  predicted_branch_taken = to_unsigned((state == 1)
+                                                         ? from_fetcher.predicted_branch_taken
+                                                         : last_predicted_branch_taken);
 
         issue_instruction(instruction, program_counter, predicted_branch_taken);
-        last_instruction = instruction;
-        last_program_counter = program_counter;
+        last_instruction            = instruction;
+        last_program_counter        = program_counter;
         last_predicted_branch_taken = predicted_branch_taken;
     }
 
@@ -235,10 +237,10 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
     void flush() {
         disable_all_outputs();
-        state          = 1;
-        last_branch_id = 0;
-        last_instruction = 0;
-        last_program_counter = 0;
+        state                       = 1;
+        last_branch_id              = 0;
+        last_instruction            = 0;
+        last_program_counter        = 0;
         last_predicted_branch_taken = 0;
     }
 
@@ -282,17 +284,10 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         }
         switch (opcode) {
         case 0b0110111: { // LUI
-            Bit<2> op;
-            if (instruction == 0x0ff00513) {
-                // Special halt instruction to stop the simulator
-                op = 3; // type 'halt'
-            } else {
-                op = 2; // type 'others'
-            }
 
             // Set output to ROB
             to_rob.enabled <= 1;
-            to_rob.op <= op;
+            to_rob.op <= 2; // type 'others'
             to_rob.value_ready <= 1; // value ready
             to_rob.value <= to_unsigned(imm_u) << 12;
             to_rob.alt_value <= 0;
@@ -383,8 +378,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
                     // Set output to ROB
                     to_rob.enabled <= 1;
-                    to_rob.op <= 2;          // type 'others'
-                    to_rob.value_ready <= 1; // value ready
+                    to_rob.op <= 2;                      // type 'others'
+                    to_rob.value_ready <= 1;             // value ready
                     to_rob.value <= program_counter + 4;
                     to_rob.alt_value <= 0;
                     to_rob.dest <= 0; // unused
@@ -410,10 +405,10 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
             // Set output to ROB
             to_rob.enabled <= 1;
-            to_rob.op <= 0;          // type 'jalr'
-            to_rob.value_ready <= 0; // value not ready until ALU computes it
-            to_rob.value <= 0;       // temporary
-            to_rob.alt_value <= program_counter + 4;
+            to_rob.op <= 0;                          // type 'jalr'
+            to_rob.value_ready <= 0;                 // value not ready until ALU computes it
+            to_rob.value <= 0;                       // temporary
+            to_rob.alt_value <= program_counter + 4; // this value will be written to rd
             to_rob.dest <= rd;
             to_rob.predicted_branch_taken <= 0;
             rob_written = true;
@@ -436,6 +431,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
             state          = 3;      // Wait for jalr to complete
             last_branch_id = rob_id; // When the ROB commits this instruction, it will send its rob_id to the decoder
+            // TODO: listen to CDB and exit `wait for jalr` state as soon as the address is calculated
 
             break;
         }
@@ -454,11 +450,11 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
             // Set output to ROB (registration of branch instruction)
             to_rob.enabled <= 1;
-            to_rob.op <= 1;                                   // type 'branch'
-            to_rob.value_ready <= 0;                          // value not ready until branch is resolved
-            to_rob.value <= 0;                                // temporary
+            to_rob.op <= 1;                      // type 'branch'
+            to_rob.value_ready <= 0;             // value not ready until branch is resolved
+            to_rob.value <= 0;                   // temporary
             to_rob.alt_value <= program_counter; // Current pc
-            to_rob.dest <= 0;                                 // No register to write to
+            to_rob.dest <= 0;                    // No register to write to
             to_rob.predicted_branch_taken <= predicted_branch_taken;
             rob_written = true;
 
@@ -558,9 +554,17 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
                 return;
             }
 
+            Bit<2> op;
+            if (instruction == 0x0ff00513) {
+                // Special halt instruction to stop the simulator
+                op = 3; // type 'halt'
+            } else {
+                op = 2; // type 'others'
+            }
+
             // Set output to ROB (registration of ALU I-type instruction)
             to_rob.enabled <= 1;
-            to_rob.op <= 2;          // type 'others'
+            to_rob.op <= op;
             to_rob.value_ready <= 0; // value not ready until ALU computes it
             to_rob.value <= 0;       // temporary
             to_rob.alt_value <= 0;   // unused
@@ -632,7 +636,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             dark::debug::unreachable();
         }
 
-        std::cerr << "IDU: Issued instruction @" << std::hex << to_unsigned(program_counter) << " to ROB entry " << to_unsigned(rob_id) << std::endl;
+        std::cerr << "IDU: Issued instruction @" << std::hex << to_unsigned(program_counter) << " to ROB entry " <<
+            to_unsigned(rob_id) << std::endl;
 
 
         to_rs_alu.write_disable(!rs_alu_written);

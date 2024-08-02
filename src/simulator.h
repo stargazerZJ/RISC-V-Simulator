@@ -142,7 +142,7 @@ public:
         memory_->load_data(std::cin);
 
         std::function halt_callback = [&] {
-            unsigned int output = reg_file_.get_data(10);
+            unsigned int output = reg_file_.get_data(10) & 0xFF;
             std::cout << output << std::endl;
             exit(0);
         };
