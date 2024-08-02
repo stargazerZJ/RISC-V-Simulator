@@ -99,6 +99,11 @@ private:
 };
 
 uint8_t Interpreter::run(unsigned int max_instructions) {
+    auto log = [&](uint32_t pc, uint32_t reg_val, Bit<5> reg_id) {
+        std::cerr << std::setw(8) << std::setfill(' ') << std::hex << pc << ": "
+                  << std::setw(8) << reg_val << " -> "
+                  << "r" << std::setw(2) << to_unsigned(reg_id) << std::endl;
+    };
     for (unsigned instruction_count = 0; instruction_count < max_instructions; instruction_count++) {
         Bit<32> instruction = memory_->get_word(program_counter_);
 
@@ -130,6 +135,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             // U-type: LUI
             auto decoded = instructions::decode_U(instruction);
             get_register(decoded.rd) = to_unsigned(decoded.imm) << 12;
+            log(program_counter_, to_unsigned(decoded.imm) << 12, decoded.rd);
             program_counter_ += 4;
             break;
         }
@@ -138,6 +144,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             // U-type: AUIPC
             auto decoded = instructions::decode_U(instruction);
             get_register(decoded.rd) = program_counter_ + (to_unsigned(decoded.imm) << 12);
+            log(program_counter_, program_counter_ + (to_unsigned(decoded.imm) << 12), decoded.rd);
             program_counter_ += 4;
             break;
         }
@@ -146,6 +153,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             // J-type: JAL
             auto decoded = instructions::decode_J(instruction);
             get_register(decoded.rd) = program_counter_ + 4;
+            log(program_counter_, program_counter_ + 4, decoded.rd);
             program_counter_ += to_signed(decoded.imm);
             break;
         }
@@ -154,6 +162,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             // I-type: JALR
             auto decoded = instructions::decode_I(instruction);
             get_register(decoded.rd) = program_counter_ + 4;
+            log(program_counter_, program_counter_ + 4, decoded.rd);
             program_counter_ = to_unsigned((get_register(decoded.rs1) + to_signed(decoded.imm)) & ~1);
             break;
         }
@@ -220,6 +229,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             default:
                 dark::debug::unreachable();
             }
+            log(program_counter_, get_register_unsigned(decoded.rd), decoded.rd);
 
             program_counter_ += 4;
             break;
@@ -243,6 +253,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             default:
                 dark::debug::unreachable();
             }
+            log(program_counter_, 0, 0);
 
             program_counter_ += 4;
             break;
@@ -286,6 +297,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             default:
                 dark::debug::unreachable();
             }
+            log(program_counter_, get_register_unsigned(decoded.rd), decoded.rd);
 
             program_counter_ += 4;
             break;
@@ -350,6 +362,7 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             default:
                 dark::debug::unreachable();
             }
+            log(program_counter_, get_register_unsigned(decoded.rd), decoded.rd);
 
             program_counter_ += 4;
             break;
