@@ -75,8 +75,8 @@ public:
         };
         decoder_.rob_id = [&] {
             return decoder_.to_rob.enabled == 1
-                       ? rob::ROB::next_tail(to_unsigned(reorder_buffer_.tail_output))
-                       : to_unsigned(reorder_buffer_.tail_output);
+                       ? rob::ROB::next_tail(to_unsigned(reorder_buffer_.next_tail_output))
+                       : to_unsigned(reorder_buffer_.next_tail_output);
         };
         dark::connect(decoder_.commit_info, reorder_buffer_.commit_output);
         decoder_.flush_input = reorder_buffer_.flush_output;
@@ -149,7 +149,7 @@ public:
 
         reorder_buffer_.halt_callback = halt_callback;
 
-        cpu_.run(1000, true);
+        cpu_.run(100, true);
 
         dark::debug::assert(false, "CPU: maxmimum cycle count reached");
     }

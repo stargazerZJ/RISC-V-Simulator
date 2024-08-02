@@ -75,7 +75,7 @@ struct ROB_Output {
     Output_To_Fetcher      to_fetcher;
     Output_To_Decoder      to_decoder;
     Register<32>           vacancy;      // could have been `bool is_full`, but that requires combinational logic
-    Register<ROB_SIZE_LOG> tail_output;  // could have been `new_tail_id`, but that requires combinational logic
+    Register<ROB_SIZE_LOG> next_tail_output;  // could have been `new_tail_id`, but that requires combinational logic
     Register<1>            flush_output; // to all
 };
 
@@ -289,7 +289,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
         vacancy <= vacancy_count - 1; // account for the unused entry at position 0
 
-        tail_output <= tail;
+        next_tail_output <= next_tail(to_unsigned(tail));
 
         for (unsigned i = 0; i < ROB_SIZE; i++) {
             to_decoder.ready[i] <= rob[i].busy;
