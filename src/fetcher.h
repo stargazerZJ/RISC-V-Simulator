@@ -10,7 +10,7 @@
 
 namespace fetcher {
 
-using BranchPredictor = branch_prediction::BimodalPredictor;
+using BranchPredictor = branch_prediction::TwoLevelAdaptivePredictor;
 
 struct Fetcher_Input {
     Wire<32> last_PC_plus_4;
@@ -62,7 +62,7 @@ struct Fetcher final : dark::Module<Fetcher_Input, Fetcher_Output> {
 
         instruction <= memory->get_word(pc);    // fetching the instruction takes only 1 cycle
         program_counter <= pc;
-        predicted_branch_taken <= branch_predictor.predict(pc);    // TODO: implement branch predictor;
+        predicted_branch_taken <= branch_predictor.predict(pc);
     }
     void first_run() {
         unsigned pc = 0;
@@ -73,6 +73,6 @@ struct Fetcher final : dark::Module<Fetcher_Input, Fetcher_Output> {
     }
 private:
     Memory *memory;
-    BranchPredictor branch_predictor;
+    BranchPredictor branch_predictor{};
 };
 }
