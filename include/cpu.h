@@ -49,7 +49,7 @@ public:
 		std::shuffle(shuffled.begin(), shuffled.end(), engine);
 
 		++cycles;
-		std::cerr << "Cycle " << cycles << std::endl;
+		std::cerr << "Cycle " << std::dec << cycles << std::endl;
 		for (auto &module: shuffled)
 			module->work();
 		sync_all();
