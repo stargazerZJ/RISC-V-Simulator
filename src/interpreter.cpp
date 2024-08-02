@@ -104,6 +104,10 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
                   << std::setw(8) << reg_val << " -> "
                   << "r" << std::setw(2) << to_unsigned(reg_id) << std::endl;
     };
+    auto log_branch = [&](uint32_t pc, bool taken, uint32_t target) {
+        std::cerr << std::setw(8) << std::setfill(' ') << std::hex << pc << ": "
+                  << "Branched to "<< std::setw(8) << target << std::endl;
+    };
     for (unsigned instruction_count = 0; instruction_count < max_instructions; instruction_count++) {
         Bit<32> instruction = memory_->get_word(program_counter_);
 
@@ -198,8 +202,10 @@ uint8_t Interpreter::run(unsigned int max_instructions) {
             }
 
             if (taken) {
+                log_branch(program_counter_, true, program_counter_ + to_signed(decoded.imm));
                 program_counter_ += to_signed(decoded.imm);
             } else {
+                log_branch(program_counter_, false, program_counter_ + 4);
                 program_counter_ += 4;
             }
             break;
