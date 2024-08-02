@@ -163,21 +163,23 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             last_branch_id = 0; // No uncommitted branch
         }
 
-        if (state == 0) {
-            state = 1;
+        if (state == State::SkipOneCycle) {
+            state = State::TryToIssue;
             disable_all_outputs();
             return;
-        } else if (state == 3) {
+        } else if (state == State::WaitForJalr) {
             if (last_branch_id == 0) {
-                state = 1;
+                state = State::TryToIssue;
             }
             disable_all_outputs();
             return;
         }
 
-        Bit<32> instruction = to_unsigned((state == 1) ? from_fetcher.instruction : last_instruction);
-        Bit<32> program_counter = to_unsigned((state == 1) ? from_fetcher.program_counter : last_program_counter);
-        Bit<1>  predicted_branch_taken = to_unsigned((state == 1)
+        Bit<32> instruction = to_unsigned((state == State::TryToIssue) ? from_fetcher.instruction : last_instruction);
+        Bit<32> program_counter = to_unsigned((state == State::TryToIssue)
+                                                  ? from_fetcher.program_counter
+                                                  : last_program_counter);
+        Bit<1> predicted_branch_taken = to_unsigned((state == State::TryToIssue)
                                                         ? from_fetcher.predicted_branch_taken
                                                         : last_predicted_branch_taken);
 
@@ -237,7 +239,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
     void flush() {
         disable_all_outputs();
-        state                       = 1;
+        state                       = State::TryToIssue;
         last_branch_id              = 0;
         last_instruction            = 0;
         last_program_counter        = 0;
@@ -278,7 +280,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         auto rs1_result = query_register(to_unsigned(rs1));
         auto rs2_result = query_register(to_unsigned(rs2));
 
-        state = 1; // Set state to 1 by default unless an issue fails or there is a special case.
+        state = State::TryToIssue;
+        // Set state to TryToIssue by default unless an issue fails or there is a special case.
 
         if (rob_full == 1) {
             issue_failure(program_counter);
@@ -366,7 +369,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_fetcher.pc <= jump_address;
             fetcher_written = true;
 
-            state = 0; // Skip 1 cycle
+            state = State::SkipOneCycle; // Skip 1 cycle
 
             break;
         }
@@ -393,7 +396,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
                     to_fetcher.pc <= return_address;
                     fetcher_written = true;
 
-                    state = 0; // Skip 1 cycle
+                    state = State::SkipOneCycle; // Skip 1 cycle
                     break;
                 }
             }
@@ -431,9 +434,9 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_rs_alu.dest <= rob_id;
             rs_alu_written = true;
 
-            state          = 3;      // Wait for jalr to complete
+            state          = State::WaitForJalr; // Wait for jalr to complete
             last_branch_id = rob_id; // When the ROB commits this instruction, it will send its rob_id to the decoder
-            // TODO: listen to CDB and exit `wait for jalr` state as soon as the address is calculated. The ROB won't need to write to the Fetcher.
+            // TODO: listen to CDB and exit `WaitForJalr` state as soon as the address is calculated. The ROB won't need to write to the Fetcher.
 
             break;
         }
@@ -477,8 +480,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_rs_bcu.pc_target <= target_address;
             rs_bcu_written = true;
 
-            state          = 0;      // Skip 1 cycle
-            last_branch_id = rob_id; // Updates the last_branch_id
+            state          = State::SkipOneCycle; // Skip 1 cycle
+            last_branch_id = rob_id;              // Updates the last_branch_id
 
             break;
         }
@@ -541,7 +544,6 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_rs_mem_store.Vk <= rs2_result.V;
             to_rs_mem_store.Qj <= rs1_result.Q;
             to_rs_mem_store.Qk <= rs2_result.Q;
-            // Note: Qm for last branch id to resolve branch misprediction
             to_rs_mem_store.Qm <= last_branch_id;
             to_rs_mem_store.dest <= rob_id;
             to_rs_mem_store.offset <= imm_s;
@@ -652,7 +654,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
     }
 
     void issue_failure(Bit<32> program_counter) {
-        state = 2; // Try to issue previous instruction
+        state = State::IssuePrevious; // Try to issue previous instruction
 
         to_fetcher.enabled <= 1;
         to_fetcher.pc <= program_counter + 4;
@@ -666,8 +668,14 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
     }
 
 private:
-    unsigned int state = 0; // 0 for `skip 1 cycle`, 1 for `try to issue`, 2 for `issue previous`, 3 for `wait for jalr`
-    // TODO: use enum class for state
+    enum class State {
+        SkipOneCycle  = 0,
+        TryToIssue    = 1,
+        IssuePrevious = 2,
+        WaitForJalr   = 3
+    };
+
+    State             state = State::SkipOneCycle; // Initial state is `skip 1 cycle`.
     Bit<ROB_SIZE_LOG> last_branch_id; // the rob_id of the last uncommitted branch instruction, used in RS_Mem_Store
     Bit<32>           last_instruction;
     Bit<32>           last_program_counter;
