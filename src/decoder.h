@@ -191,11 +191,22 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
     };
 
     Query_Register_Result query_register(unsigned int reg) {
+        // Check the last issued instruction first
+        if (to_rob.enabled == 1 && to_rob.dest == reg) {
+            // The last issued instruction has not been updated to the ROB yet
+            if (to_rob.value_ready) {
+                return {to_rob.value, 0};
+            } else {
+                dark::debug::assert(to_reg_file.enabled, "Wrote to ROB but not to reg file");
+                return {0, to_reg_file.rob_id};
+            }
+        }
+
         Bit<ROB_SIZE_LOG> Q = from_regfile.rob_id[reg];
 
         if (Q == 0) return {from_regfile.data[reg], 0};
 
-        // Check the CDB first
+        // Check the CDB
         if (cdb_input_alu.rob_id == Q) {
             return {cdb_input_alu.value, 0};
         }
@@ -219,6 +230,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         to_rs_mem_load.write_disable();
         to_rs_mem_store.write_disable();
         to_fetcher.write_disable();
+        to_reg_file.write_disable();
     }
 
     void flush() {
@@ -619,6 +631,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         default:
             dark::debug::unreachable();
         }
+
+        std::cerr << "IDU: Issued instruction @" << std::hex << to_unsigned(program_counter) << " to ROB entry " << to_unsigned(rob_id) << std::endl;
 
 
         to_rs_alu.write_disable(!rs_alu_written);
