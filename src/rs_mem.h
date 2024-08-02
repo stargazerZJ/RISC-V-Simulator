@@ -316,6 +316,11 @@ struct Reservation_Station final : dark::Module<RS_Input, RS_Output> {
 
     void clear_last_sent() {
         last_issue_status = 0;
+        if (last_issue_typ == 0) { // load
+            rs_load[to_unsigned(last_issue_rs_id)].busy = 0;
+        } else { // store
+            rs_store[to_unsigned(last_issue_rs_id)].busy = 0;
+        }
     }
 
     /// Called when a store instruction is received by the memory, i.e. issued sucessfully
