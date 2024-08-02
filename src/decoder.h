@@ -278,6 +278,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         auto rs1_result = query_register(to_unsigned(rs1));
         auto rs2_result = query_register(to_unsigned(rs2));
 
+        state = 1; // Set state to 1 by default unless an issue fails or there is a special case.
+
         if (rob_full == 1) {
             issue_failure(program_counter);
             return;
