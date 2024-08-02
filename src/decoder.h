@@ -178,8 +178,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         Bit<32> instruction = to_unsigned((state == 1) ? from_fetcher.instruction : last_instruction);
         Bit<32> program_counter = to_unsigned((state == 1) ? from_fetcher.program_counter : last_program_counter);
         Bit<1>  predicted_branch_taken = to_unsigned((state == 1)
-                                                         ? from_fetcher.predicted_branch_taken
-                                                         : last_predicted_branch_taken);
+                                                        ? from_fetcher.predicted_branch_taken
+                                                        : last_predicted_branch_taken);
 
         issue_instruction(instruction, program_counter, predicted_branch_taken);
         last_instruction            = instruction;
@@ -287,7 +287,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
             // Set output to ROB
             to_rob.enabled <= 1;
-            to_rob.op <= 2; // type 'others'
+            to_rob.op <= 2;          // type 'others'
             to_rob.value_ready <= 1; // value ready
             to_rob.value <= to_unsigned(imm_u) << 12;
             to_rob.alt_value <= 0;
@@ -378,8 +378,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
                     // Set output to ROB
                     to_rob.enabled <= 1;
-                    to_rob.op <= 2;                      // type 'others'
-                    to_rob.value_ready <= 1;             // value ready
+                    to_rob.op <= 2;          // type 'others'
+                    to_rob.value_ready <= 1; // value ready
                     to_rob.value <= program_counter + 4;
                     to_rob.alt_value <= 0;
                     to_rob.dest <= 0; // unused
@@ -431,7 +431,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
             state          = 3;      // Wait for jalr to complete
             last_branch_id = rob_id; // When the ROB commits this instruction, it will send its rob_id to the decoder
-            // TODO: listen to CDB and exit `wait for jalr` state as soon as the address is calculated
+            // TODO: listen to CDB and exit `wait for jalr` state as soon as the address is calculated. The ROB won't need to write to the Fetcher.
 
             break;
         }
