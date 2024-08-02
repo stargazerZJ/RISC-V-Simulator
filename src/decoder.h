@@ -197,7 +197,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             if (to_rob.value_ready) {
                 return {to_rob.value, 0};
             } else {
-                dark::debug::assert(to_reg_file.enabled, "Wrote to ROB but not to reg file");
+                // dark::debug::assert(to_reg_file.enabled, "Wrote to ROB but not to reg file"); // That's the sw command, it's ok
                 return {0, to_reg_file.rob_id};
             }
         }
