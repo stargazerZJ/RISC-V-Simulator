@@ -11,13 +11,33 @@ namespace fetcher {
 
 class BranchPredictor {
 public:
-    BranchPredictor() {}
-    bool predict(unsigned pc) {
-        // return pc % 8 == 0;
-        return false;
+    BranchPredictor() {
+        reset();
     }
-    void update(unsigned pc, bool taken) {}
-    void reset() {}
+
+    static unsigned get_index(unsigned pc) { return (pc >> 2) % PREDICTOR_SIZE; }
+
+    bool predict(unsigned pc) {
+        unsigned index = get_index(pc);
+        return prediction_table[index] >= 2; // 2, 3 represent Taken
+    }
+
+    void update(unsigned pc, bool taken) {
+        unsigned index = get_index(pc);
+        if (taken) {
+            if (prediction_table[index] < 3) prediction_table[index]++;
+        } else {
+            if (prediction_table[index] > 0) prediction_table[index]--;
+        }
+    }
+
+    void reset() {
+        std::fill_n(prediction_table, PREDICTOR_SIZE, 1); // Start with weakly not taken
+    }
+
+private:
+    static constexpr int PREDICTOR_SIZE = 1024; // Example size
+    unsigned prediction_table[PREDICTOR_SIZE]{};
 };
 
 struct Fetcher_Input {
