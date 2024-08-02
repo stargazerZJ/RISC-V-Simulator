@@ -8,6 +8,17 @@
 #include "tools.h"
 
 namespace fetcher {
+
+class BranchPredictor {
+public:
+    BranchPredictor() {}
+    bool predict(unsigned pc) {
+        return pc % 8 == 0;
+    }
+    void update(unsigned pc, bool taken) {}
+    void reset() {}
+};
+
 struct Fetcher_Input {
     Wire<32> last_PC_plus_4;
 
@@ -51,17 +62,24 @@ struct Fetcher final : dark::Module<Fetcher_Input, Fetcher_Output> {
         } else {
             pc = to_unsigned(last_PC_plus_4);
         }
+
+        if (branch_record_enabled) {
+            branch_predictor.update(to_unsigned(pc_of_branch), to_unsigned(branch_taken));
+        }
+
         instruction <= memory->get_word(pc);    // fetching the instruction takes only 1 cycle
         program_counter <= pc;
-        predicted_branch_taken <= (pc % 8 == 0);    // TODO: implement branch predictor;
+        predicted_branch_taken <= branch_predictor.predict(pc);    // TODO: implement branch predictor;
     }
     void first_run() {
         unsigned pc = 0;
         instruction <= memory->get_word(pc);
         program_counter <= pc;
         predicted_branch_taken <= false;
+        branch_predictor.reset();
     }
 private:
     Memory *memory;
+    BranchPredictor branch_predictor;
 };
 }
