@@ -266,6 +266,8 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
         }
 
+        std::cerr << "ROB: Committed cmd(" << to_unsigned(head) << ") " << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+
         // Update the head pointer and mark the entry as not busy
         entry.busy              = 0;
         head                    = next_tail(to_unsigned(head));
@@ -285,7 +287,7 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         next_tail_output <= next_tail(to_unsigned(tail));
 
         for (unsigned i = 0; i < ROB_SIZE; i++) {
-            to_decoder.ready[i] <= rob[i].busy;
+            to_decoder.ready[i] <= rob[i].value_ready;
             to_decoder.value[i] <= rob[i].value;
         }
     }
