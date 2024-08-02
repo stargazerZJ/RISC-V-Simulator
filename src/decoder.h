@@ -132,6 +132,35 @@ struct Decoder_Output {
 
 
 struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
+    void wait_for_jalr() {
+        Bit<32> new_pc = 0;
+        // Check the CDB for the result of the JALR
+        if (cdb_input_alu.rob_id == last_jalr_id) {
+            last_jalr_id = 0;
+            new_pc       = cdb_input_alu.value;
+        } else if (cdb_input_mem.rob_id == last_jalr_id) {
+            last_jalr_id = 0;
+            new_pc       = cdb_input_mem.value;
+        }
+        if (last_jalr_id == 0) {
+            state = State::SkipOneCycle;
+
+            // Write the new PC to the fetcher
+            to_fetcher.enabled <= 1;
+            to_fetcher.pc <= new_pc;
+
+            // Disable all other outputs
+            to_rob.write_disable();
+            to_rs_alu.write_disable();
+            to_rs_bcu.write_disable();
+            to_rs_mem_load.write_disable();
+            to_rs_mem_store.write_disable();
+            to_reg_file.write_disable();
+        } else {
+            disable_all_outputs();
+        }
+    }
+
     void work() {
         // Instructions to consider: U lui, U auipc, J jal, J jalr, B beq, B bne, B blt, B bge, B bltu, B bgeu, I lb, I lh, I lw, I lbu, I lhu, S sb, S sh, S sw, I addi, I slti, I sltiu, I xori, I ori, I andi, I slli, I srli, I srai, R add, R sub, R sll, R slt, R sltu, R xor, R srl, R sra, R or, R and
 
@@ -168,10 +197,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             disable_all_outputs();
             return;
         } else if (state == State::WaitForJalr) {
-            if (last_branch_id == 0) {
-                state = State::TryToIssue;
-            }
-            disable_all_outputs();
+            wait_for_jalr();
             return;
         }
 
@@ -241,6 +267,7 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
         disable_all_outputs();
         state                       = State::TryToIssue;
         last_branch_id              = 0;
+        last_jalr_id                = 0;
         last_instruction            = 0;
         last_program_counter        = 0;
         last_predicted_branch_taken = 0;
@@ -434,9 +461,8 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
             to_rs_alu.dest <= rob_id;
             rs_alu_written = true;
 
-            state          = State::WaitForJalr; // Wait for jalr to complete
-            last_branch_id = rob_id; // When the ROB commits this instruction, it will send its rob_id to the decoder
-            // TODO: listen to CDB and exit `WaitForJalr` state as soon as the address is calculated. The ROB won't need to write to the Fetcher.
+            state        = State::WaitForJalr; // Wait for jalr to complete
+            last_jalr_id = rob_id;
 
             break;
         }
@@ -677,6 +703,7 @@ private:
 
     State             state = State::SkipOneCycle; // Initial state is `skip 1 cycle`.
     Bit<ROB_SIZE_LOG> last_branch_id; // the rob_id of the last uncommitted branch instruction, used in RS_Mem_Store
+    Bit<ROB_SIZE_LOG> last_jalr_id; // the rob_id of the last jalr instruction whose address is yet unknown
     Bit<32>           last_instruction;
     Bit<32>           last_program_counter;
     Bit<1>            last_predicted_branch_taken;

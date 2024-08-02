@@ -5,6 +5,7 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
 
 #include "common.h"
 #include "tools.h"
@@ -201,13 +202,13 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         switch (to_unsigned(entry.op)) {
         case 0b00: {
             // jalr operation
-            to_fetcher.pc_enabled <= 1;
-            to_fetcher.pc <= (entry.value & ~1);
+            to_fetcher.pc_enabled <= 0;
+            to_fetcher.pc <= 0;
             to_fetcher.branch_pc <= 0;
             to_fetcher.branch_taken <= 0;
             to_fetcher.branch_record_enabled <= 0;
 
-            commit_output.reg_id <= head; // inform the decoder to go to `skip next instruction` state
+            commit_output.reg_id <= head;
 
             // Write the return address to the destination register
             to_reg_file.enabled <= 1;
