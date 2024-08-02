@@ -268,13 +268,6 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
 
         // Update the head pointer and mark the entry as not busy
         entry.busy              = 0;
-        entry.op                = 0;
-        entry.value_ready       = 0;
-        entry.value             = 0;
-        entry.alt_value         = 0;
-        entry.dest              = 0;
-        entry.branch_taken      = 0;
-        entry.pred_branch_taken = 0;
         head                    = next_tail(to_unsigned(head));
 
         write_to_decoder();
