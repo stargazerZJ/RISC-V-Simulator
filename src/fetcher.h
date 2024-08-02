@@ -10,7 +10,7 @@
 
 namespace fetcher {
 
-using BranchPredictor = branch_prediction::TwoLevelAdaptivePredictor;
+using BranchPredictor = branch_prediction::TAGEPredictor;
 
 struct Fetcher_Input {
     Wire<32> last_PC_plus_4;
