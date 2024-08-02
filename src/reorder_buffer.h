@@ -266,8 +266,14 @@ struct ROB final : dark::Module<ROB_Input, ROB_Output> {
         }
         }
 
-        std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
-        << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+        if (to_unsigned(entry.op) == 0x00) {
+            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
+            << to_unsigned(entry.alt_value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+        }
+        else {
+            std::cerr << std::hex << "ROB: Committed cmd(" << to_unsigned(head) << ") "
+            << to_unsigned(entry.value) << " -> reg " << to_unsigned(entry.dest) << std::endl;
+        }
 
         // Update the head pointer and mark the entry as not busy
         entry.busy              = 0;
