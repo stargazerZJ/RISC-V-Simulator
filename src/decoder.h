@@ -163,25 +163,13 @@ struct Decoder final : dark::Module<Decoder_Input, Decoder_Output> {
 
     void work() {
         // Instructions to consider: U lui, U auipc, J jal, J jalr, B beq, B bne, B blt, B bge, B bltu, B bgeu, I lb, I lh, I lw, I lbu, I lhu, S sb, S sh, S sw, I addi, I slti, I sltiu, I xori, I ori, I andi, I slli, I srli, I srai, R add, R sub, R sll, R slt, R sltu, R xor, R srl, R sra, R or, R and
-
-        // if flush_input is received, reset and go to state skip 1 cycle, return
-
-        // if state is `skip 1 cycle`, do nothing, go to state `try to issue`, return
-
-        // if state is `wait for jalr`, stay in that state and return unless commit_info.rob_id == last_branch_id.
-        // if so, go to state `try to issue`, return
-
-        // unsigned int instruction; = from_fetcher.instruction if in state `try to issue`, last_insturction if in state `issue previous`
-
-        // try to issue the instruction. if failed (something is full), go to state `issue previous`
-        // special cases :
+        // Special cases :
         // lui: write to rob only, with `value_ready` set to true
         // auipc: convert to an add instruction
         // jal: write to rob only, with `value_ready` set to true
         // ret: special case of jalr, if x1 is ready, convert it to a jal
         // jalr: write an add instruction to rs_alu, go to state `wait for jalr`
 
-        // remember that every output register must be written exactly once, so call write_disable if nothing to write
         if (flush_input == 1) {
             flush();
             return;
