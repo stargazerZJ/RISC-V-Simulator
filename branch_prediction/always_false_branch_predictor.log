@@ -1,0 +1,171 @@
+Testing: array_test1
+Execution of array_test1: Success (Return value: 0)
+Error output (saved to test/array_test1-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.545455
+cpu cycle count: 339
+cpu cycle per branch: 15.409091
+Output (saved to test/array_test1.out):
+123
+Testing: array_test2
+Execution of array_test2: Success (Return value: 0)
+Error output (saved to test/array_test2-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.500000
+cpu cycle count: 425
+cpu cycle per branch: 16.346154
+Output (saved to test/array_test2.out):
+43
+Testing: basicopt1
+Execution of basicopt1: Success (Return value: 0)
+Error output (saved to test/basicopt1-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.589774
+cpu cycle count: 1077623
+cpu cycle per branch: 6.946177
+Output (saved to test/basicopt1.out):
+88
+Testing: bulgarian
+Execution of bulgarian: Success (Return value: 0)
+Error output (saved to test/bulgarian-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.506399
+cpu cycle count: 858799
+cpu cycle per branch: 12.012351
+Output (saved to test/bulgarian.out):
+159
+Testing: expr
+Execution of expr: Success (Return value: 0)
+Error output (saved to test/expr-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.378378
+cpu cycle count: 1034
+cpu cycle per branch: 9.315315
+Output (saved to test/expr.out):
+58
+Testing: gcd
+Execution of gcd: Success (Return value: 0)
+Error output (saved to test/gcd-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.625000
+cpu cycle count: 817
+cpu cycle per branch: 6.808333
+Output (saved to test/gcd.out):
+178
+Testing: hanoi
+Execution of hanoi: Success (Return value: 0)
+Error output (saved to test/hanoi-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.499800
+cpu cycle count: 402299
+cpu cycle per branch: 23.045139
+Output (saved to test/hanoi.out):
+20
+Testing: lvalue2
+Execution of lvalue2: Success (Return value: 0)
+Error output (saved to test/lvalue2-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.666667
+cpu cycle count: 80
+cpu cycle per branch: 13.333333
+Output (saved to test/lvalue2.out):
+175
+Testing: magic
+Execution of magic: Success (Return value: 0)
+Error output (saved to test/magic-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.531436
+cpu cycle count: 1263037
+cpu cycle per branch: 18.609925
+Output (saved to test/magic.out):
+106
+Testing: manyarguments
+Execution of manyarguments: Success (Return value: 0)
+Error output (saved to test/manyarguments-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.800000
+cpu cycle count: 91
+cpu cycle per branch: 9.100000
+Output (saved to test/manyarguments.out):
+40
+Testing: multiarray
+Execution of multiarray: Success (Return value: 0)
+Error output (saved to test/multiarray-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.185185
+cpu cycle count: 3516
+cpu cycle per branch: 21.703704
+Output (saved to test/multiarray.out):
+115
+Testing: naive
+Execution of naive: Success (Return value: 0)
+Error output (saved to test/naive-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: nan
+cpu cycle count: 48
+cpu cycle per branch: inf
+Output (saved to test/naive.out):
+94
+Testing: pi
+Execution of pi: Success (Return value: 0)
+Error output (saved to test/pi-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.422702
+cpu cycle count: 216802080
+cpu cycle per branch: 5.425969
+Output (saved to test/pi.out):
+137
+Testing: qsort
+Execution of qsort: Success (Return value: 0)
+Error output (saved to test/qsort-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.300067
+cpu cycle count: 2975829
+cpu cycle per branch: 14.875798
+Output (saved to test/qsort.out):
+105
+Testing: queens
+Execution of queens: Success (Return value: 0)
+Error output (saved to test/queens-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.632216
+cpu cycle count: 1194198
+cpu cycle per branch: 15.485736
+Output (saved to test/queens.out):
+171
+Testing: sample
+Execution of sample: Success (Return value: 0)
+Error output (saved to test/sample-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: nan
+cpu cycle count: 48
+cpu cycle per branch: inf
+Output (saved to test/sample.out):
+94
+Testing: statement_test
+Execution of statement_test: Success (Return value: 0)
+Error output (saved to test/statement_test-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.594059
+cpu cycle count: 1837
+cpu cycle per branch: 9.094059
+Output (saved to test/statement_test.out):
+50
+Testing: superloop
+Execution of superloop: Success (Return value: 0)
+Error output (saved to test/superloop-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.872946
+cpu cycle count: 1132170
+cpu cycle per branch: 2.602528
+Output (saved to test/superloop.out):
+134
+Testing: tak
+Execution of tak: Success (Return value: 0)
+Error output (saved to test/tak-sim.err):
+CPU simulatior halted successfully.
+branch prediction accuracy: 0.749996
+cpu cycle count: 3835114
+cpu cycle per branch: 63.245007
+Output (saved to test/tak.out):
+186
