@@ -55,7 +55,7 @@ struct RegFile final : dark::Module<RegFile_Input, RegFile_Output> {
         data_[0]   = 0;
         for (int i = 0; i < 32; ++i) {
             rob_id[i] <= rob_id_[i];
-            data[i] <= data[i];
+            data[i] <= data_[i];
         }
     }
 
